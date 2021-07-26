@@ -1,7 +1,7 @@
 - 👋 Hi, I'm @ tiago-ofc13
 - 👀 I'm interested in programming content
 - 🌱 I'm currently learning front-end
-- 💞️ I'm looking to collaborate in everything I can
+- 💞️ I'm looking to collaborate in everything  que estiver ao meu alcance!
 - 📫 How to reach me by e-mail: grego007lps@gmail.com
 
 <!---
