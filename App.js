@@ -1,229 +1,169 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useState, useEffect } from 'react';
-import { AsyncStorage } from 'react-native';
-import { AppLoading } from 'expo';
-import { AntDesign } from '@expo/vector-icons'; 
-import { useFonts, Lato_400Regular } from '@expo-google-fonts/lato';
-import { StyleSheet, Text, View, ImageBackground, TouchableOpacity,TouchableHighlight ,Modal ,ScrollView, TextInput } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import { StyleSheet, Text, View, Picker, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Contador from './Contador';
 
 export default function App() {
 
-  const image = require('./resources/bg.jpg');
-
   console.disableYellowBox = true;
-
-  const [tarefas, setarTarefas] = useState([]);
-
-  const [modal,setModal] = useState(false);
-
-  const [tarefaAtual,setTarefaAtual] = useState('');
-
-
+  const [estado,setarEstado] = useState('selecionar');
+  const [segundos,setarSegundos] = useState(1);
+  const [minutos,setarMinutos] = useState(0);
+  const [alarmeSound,setarAlarmeSound] = useState([
+    {
+      id:1,
+      selecionado: true,
+      som:'alarme 1',
+      file: require('./assets/alarme1.mp3')
+    },
+    {
+      id:2,
+      selecionado: false,
+      som:'alarme 2',
+      file: require('./assets/alarme2.mp3')
+    },
+    {
+      id:3,
+      selecionado: false,
+      som:'alarme 3',
+      file: require('./assets/alarme3.mp3')
+    }
+  ]);
  
-  let [fontsLoaded] = useFonts({
-    Lato_400Regular,
-  });
-
-  useEffect(()=>{
-    //alert('app carregado...');
-    
-    (async () => {
-      try {
-        let tarefasAtual = await AsyncStorage.getItem('tarefas');
-        if(tarefasAtual == null)
-          setarTarefas([]);
-        else
-          setarTarefas(JSON.parse(tarefasAtual));
-      } catch (error) {
-        // Error saving data
-      }
-    })();
-    
-},[])
-
-  if (!fontsLoaded) {
-    return <AppLoading />;
-  }
-
- 
-
-  function deletarTarefa(id){
-      alert('Tarefa com id '+id+' foi deletada com sucesso!');
-      //TODO: Deletar do array/estado a tarefa com id especificado!
-      let newTarefas = tarefas.filter(function(val){
-            return val.id != id;
-      });
-
-      setarTarefas(newTarefas);
-     
-      (async () => {
-        try {
-          await AsyncStorage.setItem('tarefas', JSON.stringify(newTarefas));
-          //console.log('chamado');
-        } catch (error) {
-          // Error saving data
-        }
-      })();
-      
-  }
-
-  function addTarefa(){
-    
-    setModal(!modal);
-
-    let id = 0;
-    if(tarefas.length > 0){
-        id = tarefas[tarefas.length-1].id + 1;
+    var numeros = [];
+    for(var i = 1; i<=60; i++){
+        numeros.push(i);
     }
 
-    let tarefa = {id:id,tarefa:tarefaAtual};
-
-    setarTarefas([...tarefas,tarefa]);
-
-   
-
-    (async () => {
-      try {
-        await AsyncStorage.setItem('tarefas', JSON.stringify([...tarefas,tarefa]));
-      } catch (error) {
-        // Error saving data
-      }
-    })();
     
-  }
 
- 
 
+    function setarAlarme(id){
+        let alarmesTemp = alarmeSound.map(function(val){
+              if(id != val.id)
+                val.selecionado = false;
+              else
+                val.selecionado = true;
+              return val;
+        })
+
+        setarAlarmeSound(alarmesTemp);
+    }
+
+
+  if(estado == 'selecionar'){
   return (
-    
-    <ScrollView style={{flex:1}}>
-      <StatusBar hidden />
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modal}
-        onRequestClose={() => {
-          Alert.alert("Modal has been closed.");
-        }}
-      >
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <TextInput onChangeText={text => setTarefaAtual(text)} autoFocus={true}></TextInput>
-
-            <TouchableHighlight
-              style={{ ...styles.openButton, backgroundColor: "#2196F3" }}
-              onPress={() => addTarefa()}
-            >
-              <Text style={styles.textStyle}>Adicionar Tarefa</Text>
-            </TouchableHighlight>
-          </View>
-        </View>
-      </Modal>
-
-      
-
-        <ImageBackground source={image} style={styles.image}>
-          <View style={styles.coverView}>
-            <Text style={styles.textHeader}>Lista de Tarefas - Danki Code</Text>
-            </View>
-        </ImageBackground>
-
-      
-
+    <View style={styles.container}>
+      <StatusBar style="auto" />
+      <LinearGradient
+          // Background Linear Gradient
+          colors={['rgba(59, 29, 105,1)', 'rgba(59, 29, 105,0.8)']}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            height:'100%'
+          }}
+        />
+      <Text style={{color:'white',fontSize:30}}>Selecione o seu Tempo:</Text>
+      <View style={{flexDirection:'row'}}>
+        <Text style={{color:'white',paddingTop:16}}>Min: </Text>
+      <Picker
+        selectedValue={minutos}
+        onValueChange={(itemValue, itemIndex) => setarMinutos(itemValue)}
+        style={{ height: 50, width: 100,color:'white' }}
+        >
+        <Picker.Item label='0' value='0' />
         {
-        tarefas.map(function(val){
-          return (<View style={styles.tarefaSingle}>
-            <View style={{flex:1,width:'100%',padding:10}}>
-                <Text>{val.tarefa}</Text>
-            </View>
-            <View style={{alignItems:'flex-end',flex:1,padding:10}}>
-              <TouchableOpacity onPress={()=> deletarTarefa(val.id)}><AntDesign name="minuscircleo" size={24} color="black" /></TouchableOpacity>
-            </View>
-            </View>);
+        numeros.map(function(val){
+            return(<Picker.Item label={val.toString()} value={val.toString()} />);
         })
         
-
         }
-
-        <TouchableOpacity style={styles.btnAddTarefa} onPress={()=>setModal(true)}><Text
-         style={{textAlign:'center',color:'white'}}>Adicionar Tarefa!
-         </Text>
-         </TouchableOpacity>
         
-        </ScrollView>
-       
+        
+      </Picker>
+      <Text style={{color:'white',paddingTop:16}}>Seg: </Text>
+      <Picker
+              selectedValue={segundos}
+              onValueChange={(itemValue, itemIndex) => setarSegundos(itemValue)}
+        style={{ height: 50, width: 100,color:'white' }}
+        >
+          
+         {
+        numeros.map(function(val){
+            return(
+            <Picker.Item label={val.toString()} value={val.toString()} />
+            );
+          })
+        
+        }
+      </Picker>
+      
+      </View>
+
+      <View style={{flexDirection:'row'}}>
+          {
+          alarmeSound.map(function(val){
+              if(val.selecionado){
+              
+              return ( 
+              
+              <TouchableOpacity onPress={()=>setarAlarme(val.id)} style={styles.btnEscolherSelecionado}>
+                <Text style={{color:'white'}}>{val.som}</Text>
+              </TouchableOpacity>);
+              }else{
+                return ( 
+              
+                  <TouchableOpacity onPress={()=>setarAlarme(val.id)} style={styles.btnEscolher}>
+                    <Text style={{color:'white'}}>{val.som}</Text>
+                  </TouchableOpacity>);
+              }
+              
+          })
+         
+          }
+      </View>
+          <TouchableOpacity onPress={()=>setarEstado('iniciar')} style={styles.btnIniciar}><Text style={{textAlign:'center',paddingTop:30,color:'white',fontSize:20}}>Iniciar</Text></TouchableOpacity>
+    </View>
+    
   );
+  }else if(estado == 'iniciar'){
+      //TODO: Na próxima aula trabalhamos a lógica do timer/contador.
+      return(
+          <Contador alarmes={alarmeSound} setarMinutos={setarMinutos} setarSegundos={setarSegundos} setarEstado={setarEstado} minutos={minutos} segundos={segundos}></Contador>
+      );
+  }
 }
 
 const styles = StyleSheet.create({
-  image: {
-    width:'100%',
-    height: 80,
-    resizeMode: "cover"
-  },
-  btnAddTarefa:{
-    width:200,
-    padding:8,
-    backgroundColor:'gray',
-    marginTop:20
-  },
-  coverView:{
-    width:'100%',
-    height:80,
-    backgroundColor:'rgba(0,0,0,0.5)'
-  },
-  textHeader:{
-    textAlign:'center',
-    color:'white',
-    fontSize:20,
+  btnIniciar:{
+    backgroundColor:'rgb(116, 67, 191)',
+    width:100,
+    height:100,
+    borderRadius:50,
     marginTop:30,
-    fontFamily:'Lato_400Regular'
+    borderColor:'white',
+    borderWidth:2
   },
-  tarefaSingle:{
-      marginTop:30,
-      width:'100%',
-      borderBottomWidth:1,
-      borderBottomColor:'black',
-      flexDirection:'row',
-      paddingBottom:10
-  },
-  //Estilos para nossa modal
-  centeredView: {
+  container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor:'rgba(0,0,0,0.5)'
+    //backgroundColor: 'rgb(80, 50, 168)',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    zIndex:5
+  btnEscolher:{
+      marginRight:10,
+      padding:8,
+      backgroundColor:'rgb(116, 67, 191)'
   },
-  openButton: {
-    backgroundColor: "#F194FF",
-    borderRadius: 20,
-    padding: 10,
-    elevation: 2
-  },
-  textStyle: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center"
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: "center"
-  }
-
+  btnEscolherSelecionado:{
+    marginRight:10,
+    padding:8,
+    backgroundColor:'rgba(116, 67, 191,0.3)',
+    borderColor:'white',
+    borderWidth:1
+},
 });
