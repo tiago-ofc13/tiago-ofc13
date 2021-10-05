@@ -1,229 +1,148 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useState, useEffect } from 'react';
-import { AsyncStorage } from 'react-native';
-import { AppLoading } from 'expo';
-import { AntDesign } from '@expo/vector-icons'; 
-import { useFonts, Lato_400Regular } from '@expo-google-fonts/lato';
-import { StyleSheet, Text, View, ImageBackground, TouchableOpacity,TouchableHighlight ,Modal ,ScrollView, TextInput } from 'react-native';
+import React, { useState } from 'react';
+import { ImagePropTypes, LogBox, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {Audio} from 'expo-av';
+import {AntDesign} from '@expo/vector-icons';
+import Player from './Player.js';
 
 export default function App() {
 
-  const image = require('./resources/bg.jpg');
+  LogBox.ignoreAllLogs(true);
 
-  console.disableYellowBox = true;
+  const [audioIndex,setarAudioIndex] = useState(0);
 
-  const [tarefas, setarTarefas] = useState([]);
+  const [playing,setPlaying] = useState(false);
+  
+  const [audio,setarAudio] = useState(null);
 
-  const [modal,setModal] = useState(false);
+  const [musicas,setarMusicas] = useState([
 
-  const [tarefaAtual,setTarefaAtual] = useState('');
+    {
+        nome: 'Sweet child of mine',
+        artista: 'Guns N Roses',
+        playing: false,
+        file: require('./audio.mp3')
+    },
 
+    {
+        nome: 'Welcome to the jungle',
+        artista: 'Guns N Roses',
+        playing: false,
+        file: {uri:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'}
+    },
+    {
+      nome: 'Welcome to the jungle',
+      artista: 'Guns N Roses',
+      playing: false,
+      file: {uri:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'}
+  },
+  ]);
 
- 
-  let [fontsLoaded] = useFonts({
-    Lato_400Regular,
-  });
+  const changeMusic = async (id) =>{
+      let curFile = null;
+      let newMusics = musicas.filter((val,k)=>{
+            if(id == k){
+                musicas[k].playing = true;
+               
+                curFile = musicas[k].file;
+                setPlaying(true);
+                setarAudioIndex(id);
+            }
+            else{
+                musicas[k].playing = false;
+            }
 
-  useEffect(()=>{
-    //alert('app carregado...');
-    
-    (async () => {
-      try {
-        let tarefasAtual = await AsyncStorage.getItem('tarefas');
-        if(tarefasAtual == null)
-          setarTarefas([]);
-        else
-          setarTarefas(JSON.parse(tarefasAtual));
-      } catch (error) {
-        // Error saving data
+            return musicas[k];
+      })
+
+      if(audio != null){
+          audio.unloadAsync();
       }
-    })();
-    
-},[])
 
-  if (!fontsLoaded) {
-    return <AppLoading />;
+      let curAudio = new Audio.Sound();
+
+      try{
+          await curAudio.loadAsync(curFile);
+          await curAudio.playAsync();
+      }catch(error){}
+
+      setarAudio(curAudio);
+      setarMusicas(newMusics);
+
   }
-
- 
-
-  function deletarTarefa(id){
-      alert('Tarefa com id '+id+' foi deletada com sucesso!');
-      //TODO: Deletar do array/estado a tarefa com id especificado!
-      let newTarefas = tarefas.filter(function(val){
-            return val.id != id;
-      });
-
-      setarTarefas(newTarefas);
-     
-      (async () => {
-        try {
-          await AsyncStorage.setItem('tarefas', JSON.stringify(newTarefas));
-          //console.log('chamado');
-        } catch (error) {
-          // Error saving data
-        }
-      })();
-      
-  }
-
-  function addTarefa(){
-    
-    setModal(!modal);
-
-    let id = 0;
-    if(tarefas.length > 0){
-        id = tarefas[tarefas.length-1].id + 1;
-    }
-
-    let tarefa = {id:id,tarefa:tarefaAtual};
-
-    setarTarefas([...tarefas,tarefa]);
-
-   
-
-    (async () => {
-      try {
-        await AsyncStorage.setItem('tarefas', JSON.stringify([...tarefas,tarefa]));
-      } catch (error) {
-        // Error saving data
-      }
-    })();
-    
-  }
-
- 
 
   return (
-    
-    <ScrollView style={{flex:1}}>
-      <StatusBar hidden />
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modal}
-        onRequestClose={() => {
-          Alert.alert("Modal has been closed.");
-        }}
-      >
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <TextInput onChangeText={text => setTarefaAtual(text)} autoFocus={true}></TextInput>
-
-            <TouchableHighlight
-              style={{ ...styles.openButton, backgroundColor: "#2196F3" }}
-              onPress={() => addTarefa()}
-            >
-              <Text style={styles.textStyle}>Adicionar Tarefa</Text>
-            </TouchableHighlight>
+     <View style={{flex:1}}>
+      <ScrollView style={styles.container}>
+          <StatusBar hidden />
+          <View style={styles.header}>
+            <Text style={{textAlign:'center',color:'white',fontSize:25}}>App Música</Text>
           </View>
-        </View>
-      </Modal>
 
-      
+          <View style={styles.table}>
+              <Text style={{width:'50%',color:'rgb(200,200,200)'}}>Música</Text>
+              <Text style={{width:'50%',color:'rgb(200,200,200)'}}>Artista</Text>
+          </View>
 
-        <ImageBackground source={image} style={styles.image}>
-          <View style={styles.coverView}>
-            <Text style={styles.textHeader}>Lista de Tarefas - Danki Code</Text>
-            </View>
-        </ImageBackground>
 
-      
+          {
+            musicas.map((val,k)=>{
+                
+                if(val.playing){
+                    //Renderiza algo aqui.
+                    return(
+                    <View style={styles.table}>
+                        <TouchableOpacity onPress={()=>changeMusic(k)}  style={{width:'100%',flexDirection:'row'}}>
+                            <Text style={styles.tableTextSelected}><AntDesign name="play" size={15} 
+                            color="#1DB954" /> {val.nome}</Text>
+                            <Text style={styles.tableTextSelected}>{val.artista}</Text>
+                        </TouchableOpacity>
+                    </View>
+                    );
+                }else{
+                  //Renderiza outra coisa aqui.
+                  return(
+                    <View style={styles.table}>
+                        <TouchableOpacity onPress={()=>changeMusic(k)} style={{width:'100%',flexDirection:'row'}}>
+                            <Text style={styles.tableText}><AntDesign name="play" size={15} 
+                            color="white" /> {val.nome}</Text>
+                            <Text style={styles.tableText}>{val.artista}</Text>
+                        </TouchableOpacity>
+                    </View>
+                    );
+                }
 
-        {
-        tarefas.map(function(val){
-          return (<View style={styles.tarefaSingle}>
-            <View style={{flex:1,width:'100%',padding:10}}>
-                <Text>{val.tarefa}</Text>
-            </View>
-            <View style={{alignItems:'flex-end',flex:1,padding:10}}>
-              <TouchableOpacity onPress={()=> deletarTarefa(val.id)}><AntDesign name="minuscircleo" size={24} color="black" /></TouchableOpacity>
-            </View>
-            </View>);
-        })
+            })
+          }
+
+          
+        <View style={{paddingBottom:200}}></View>
         
-
-        }
-
-        <TouchableOpacity style={styles.btnAddTarefa} onPress={()=>setModal(true)}><Text
-         style={{textAlign:'center',color:'white'}}>Adicionar Tarefa!
-         </Text>
-         </TouchableOpacity>
-        
-        </ScrollView>
-       
+      </ScrollView>
+      <Player playing={playing}  setPlaying={setPlaying} setarAudioIndex={setarAudioIndex} audioIndex={audioIndex} musicas={musicas}
+        setarMusicas={setarMusicas} audio={audio} setarAudio={setarAudio}
+      ></Player>
+      </View>
+      
   );
 }
 
 const styles = StyleSheet.create({
-  image: {
-    width:'100%',
-    height: 80,
-    resizeMode: "cover"
-  },
-  btnAddTarefa:{
-    width:200,
-    padding:8,
-    backgroundColor:'gray',
-    marginTop:20
-  },
-  coverView:{
-    width:'100%',
-    height:80,
-    backgroundColor:'rgba(0,0,0,0.5)'
-  },
-  textHeader:{
-    textAlign:'center',
-    color:'white',
-    fontSize:20,
-    marginTop:30,
-    fontFamily:'Lato_400Regular'
-  },
-  tarefaSingle:{
-      marginTop:30,
-      width:'100%',
-      borderBottomWidth:1,
-      borderBottomColor:'black',
-      flexDirection:'row',
-      paddingBottom:10
-  },
-  //Estilos para nossa modal
-  centeredView: {
+  container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor:'rgba(0,0,0,0.5)'
+    backgroundColor: '#222'
   },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    zIndex:5
+  header:{
+    backgroundColor:'#1DB954',
+    width:'100%',
+    padding:20
   },
-  openButton: {
-    backgroundColor: "#F194FF",
-    borderRadius: 20,
-    padding: 10,
-    elevation: 2
+  table:{
+    flexDirection:'row',
+    padding:20,
+    borderBottomColor:'white',
+    borderBottomWidth:1
   },
-  textStyle: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center"
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: "center"
-  }
-
+  tableTextSelected:{width:'50%',color:'#1DB954'},
+  tableText:{width:'50%',color:'white'}
 });
